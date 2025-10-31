@@ -10,8 +10,8 @@ llm_client = LLMClient()
 async def reply_to_message(req: ChatRequest):
     try:
         user_message = req.prompt
-        ai_reply = llm_client.get_reply(user_message=user_message)
+        ai_reply = await llm_client.get_reply(user_message=user_message)
         res = ChatResponse(response=ai_reply)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Exception: {str(e)} || reply_to_message")
-    return ChatResponse(response=res)
+    return res

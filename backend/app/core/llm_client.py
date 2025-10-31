@@ -4,31 +4,46 @@ from openai import OpenAI
 from langchain_core.language_models import BaseLLM
 from langchain_classic.chains.conversation.base import ConversationChain
 from langchain_classic.memory import ConversationBufferMemory
+from langchain_core.callbacks import CallbackManagerForLLMRun
+from langchain_core.outputs import Generation,LLMResult
+from pydantic import Field
 from app.core.buffer_manager import MemoryManager
 from typing import List, Optional
+import requests
 
 load_dotenv()
 
 class GithubLLM(BaseLLM):
-    def __init__(self, api_key: str, model:str, base_url:str):
-        super().__init__()
-        self.client = OpenAI(
-            api_key=api_key,
-            model=model,
-            base_url=base_url
-        )
-        self.model = model
-    def _call(self, prompt: str, stop: Optional[List[str]] = None) -> str:
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "You are a concise, helpful assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            top_p=1.0,
-        )
-        return response[0].message.content
+    api_key: str = Field(..., description="API key for GitHub Models or OpenAI")
+    model: str = Field(default="gpt-4.1", description="Model name to use")
+    base_url: str = Field(default="https://models.github.ai/inference", description="Custom API base endpoint")
+
+    client: Optional[OpenAI] = None
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+    def _generate(self, prompts: List[str], stop: Optional[List[str]] = None, run_manager = Optional[CallbackManagerForLLMRun], **kwargs) -> LLMResult:
+        generations = []
+        try:
+            print("We are here!!")
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are a concise, helpful assistant."},
+                    {"role": "user", "content": prompts[0]},
+                ],
+                temperature=0.7,
+                top_p=1.0,
+            )
+
+            text = response.choices[0].message.content
+            generations.append([Generation(text=text)])
+        except Exception as e:
+            print(f"[LLM ERROR] {e}")
+            generations.append([Generation(text=f"Error generating response: {str(e)}")])
+
+        return LLMResult(generations=generations)
     
     @property
     def _llm_type(self) -> str:
@@ -42,7 +57,7 @@ class LLMClient:
         
         self.memory = MemoryManager(max_messages=10)
         self.langchain_memory = ConversationBufferMemory(return_messages = True)
-        self.llm = GithubLLM(api_key,model,base_url)
+        self.llm = GithubLLM(api_key=api_key,model=model,base_url=base_url)
         self.chain = ConversationChain(
             llm=self.llm,
             memory=self.langchain_memory,
