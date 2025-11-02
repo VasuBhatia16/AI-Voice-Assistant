@@ -7,6 +7,6 @@ export const BASE_URL = isDev
 
 console.log(`Endpoint: ${BASE_URL}/voice/process`)
 export const processVoice = async (audioBase64: string, sessionId: string) => {
-  const res = await axios.post(`${BASE_URL}/voice/process`, { audio_base64: audioBase64, session_id: sessionId });
+  const res = await axios.post(`${BASE_URL}/api/v1/voice/process`, { audio_base64: audioBase64, session_id: sessionId });
   return res.data;
 };
