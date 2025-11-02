@@ -3,15 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
 from app.api.voice import router as voice_router
 # from fastapi.staticfiles import StaticFiles
-
+import os
 
 app = FastAPI(title="AI Voice Assistant Backend")
 
 # app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+PUBLIC_ENDPOINT = os.getenv("VITE_API_URL")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", PUBLIC_ENDPOINT],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
