@@ -9,7 +9,7 @@ app = FastAPI(title="AI Voice Assistant Backend")
 
 # app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-PUBLIC_ENDPOINT = os.getenv("VITE_API_URL")
+PUBLIC_ENDPOINT = os.getenv("VERCEL_URL")
 
 app.add_middleware(
     CORSMiddleware,
