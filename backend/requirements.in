@@ -6,3 +6,8 @@ langchain
 langchain-openai
 langchain-classic
 openai
+SpeechRecognition 
+gTTS 
+pydub
+python-multipart
+redis
