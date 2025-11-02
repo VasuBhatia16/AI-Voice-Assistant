@@ -55,7 +55,6 @@ class LLMClient:
         model = os.getenv("MODEL_NAME")
         base_url = os.getenv("BASE_URL")
         
-        self.memory = MemoryManager(max_messages=10)
         self.langchain_memory = ConversationBufferMemory(return_messages = True)
         self.llm = GithubLLM(api_key=api_key,model=model,base_url=base_url)
         self.chain = ConversationChain(
@@ -64,9 +63,11 @@ class LLMClient:
             verbose=False            
         )
         
-    async def get_reply(self, user_message: str) -> str:
-        self.memory.add("user", user_message)
+    async def get_reply(self, user_message: str, session_id: str) -> str:
+        mem = MemoryManager(session_id=session_id, max_messages=10)
+        mem.load_history()
+        mem.add("user", user_message)
         reply = self.chain.run(user_message)
-        self.memory.add("assistant", reply)
+        mem.add("assistant", reply)
         return reply
         

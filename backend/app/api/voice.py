@@ -171,7 +171,10 @@ async def process_voice(input_data: VoiceInput):
     # Step 3: AI Processing (LLM Call with Conversation Memory)
     try:
         # Use the shared LLMClient instance which maintains conversation history
-        assistant_response = await llm_client.get_reply(user_message=user_text)
+        session_id = getattr(input_data, "session_id", None)
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+        assistant_response = await llm_client.get_reply(user_message=user_text,session_id=session_id)
         logger.info(f"Generated LLM response: {assistant_response[:50]}...")
     except Exception as e:
         logger.error(f"Error in LLM processing: {type(e).__name__}: {e}")
@@ -182,7 +185,12 @@ async def process_voice(input_data: VoiceInput):
     
     if not output_audio_base64:
         logger.warning("TTS failed, returning text-only response")
-    
+    if output_audio_base64:
+        try:
+            with open("response.mp3", "wb") as f:
+                f.write(base64.b64decode(output_audio_base64))
+        except Exception as e:
+            logger.error(f"Failed to save response.mp3: {e}")
     # Step 5: Return Response
     return VoiceResponse(
         text=assistant_response,
