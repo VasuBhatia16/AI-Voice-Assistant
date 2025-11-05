@@ -104,7 +104,6 @@ async def process_voice(input_data: VoiceInput):
     automatically converted to WAV for speech recognition.
     """
     
-    # Step 1: Decode and Convert Audio to WAV Buffer
     try:
         audio_bytes = base64.b64decode(input_data.audio_base64)
         audio_buffer = BytesIO(audio_bytes)
@@ -120,8 +119,7 @@ async def process_voice(input_data: VoiceInput):
                 break
             except:
                 continue
-        
-        # If all formats failed, try without format (auto-detect)
+    
         if sound is None:
             try:
                 audio_buffer.seek(0)
@@ -134,10 +132,8 @@ async def process_voice(input_data: VoiceInput):
         try:
             sound = sound.normalize()
         except:
-            # If normalization fails, continue without it
             logger.warning("Audio normalization failed, continuing without it")
         
-        # Export as WAV (required format for speech_recognition library)
         wav_buffer = BytesIO()
         try:
             sound.export(wav_buffer, format="wav", parameters=["-ar", "16000"])
@@ -156,10 +152,8 @@ async def process_voice(input_data: VoiceInput):
             detail=f"Invalid audio format or corrupted audio data: {type(e).__name__}: {str(e)}"
         )
     
-    # Step 2: Speech-to-Text (STT)
     user_text = transcribe_audio(wav_buffer)
     
-    # Check if STT failed
     if user_text.startswith("Sorry") or user_text.startswith("Speech") or user_text.startswith("Error"):
         return VoiceResponse(
             text=user_text,
@@ -168,9 +162,7 @@ async def process_voice(input_data: VoiceInput):
     
     logger.info(f"Transcribed user input: {user_text[:50]}...")
     
-    # Step 3: AI Processing (LLM Call with Conversation Memory)
     try:
-        # Use the shared LLMClient instance which maintains conversation history
         session_id = getattr(input_data, "session_id", None)
         if not session_id:
             raise HTTPException(status_code=400, detail="session_id is required")
@@ -180,7 +172,6 @@ async def process_voice(input_data: VoiceInput):
         logger.error(f"Error in LLM processing: {type(e).__name__}: {e}")
         assistant_response = f"I apologize, but I'm having trouble processing your request right now. Please try again later. Error: {type(e).__name__}"
     
-    # Step 4: Text-to-Speech (TTS)
     output_audio_base64 = text_to_speech(assistant_response)
     
     if not output_audio_base64:
@@ -191,7 +182,6 @@ async def process_voice(input_data: VoiceInput):
                 f.write(base64.b64decode(output_audio_base64))
         except Exception as e:
             logger.error(f"Failed to save response.mp3: {e}")
-    # Step 5: Return Response
     return VoiceResponse(
         text=assistant_response,
         audio_base64=output_audio_base64
