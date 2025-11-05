@@ -223,9 +223,3 @@ Frontend:
 - `npm run preview`
 
 ---
-
-## License
-
-This project is provided as-is. Add a license if you plan to distribute.
-
-
