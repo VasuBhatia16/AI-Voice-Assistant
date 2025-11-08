@@ -1,5 +1,6 @@
 import base64
 from io import BytesIO
+import os
 import speech_recognition as sr
 from gtts import gTTS
 from fastapi import APIRouter, HTTPException
@@ -7,7 +8,7 @@ from pydub import AudioSegment
 import logging
 from app.models.voice import VoiceInput, VoiceResponse
 from app.core.llm_client import LLMClient
-
+import pyttsx3
 logger = logging.getLogger(__name__)
 
 llm_client = LLMClient()
@@ -70,16 +71,36 @@ def text_to_speech(text: str) -> str:
     Returns:
         str: Base64-encoded MP3 audio data
     """
+    # try:
+    #     tts = gTTS(text=text, lang='en', slow=False)
+    #     mp3_buffer = BytesIO()
+    #     tts.write_to_fp(mp3_buffer)
+    #     mp3_buffer.seek(0)
+    #     audio_base64 = base64.b64encode(mp3_buffer.read()).decode('utf-8')
+    #     return audio_base64
+    # except Exception as e:
+    #     logger.error(f"Error in text-to-speech conversion: {type(e).__name__}: {e}")
+    #     return "" 
     try:
-        tts = gTTS(text=text, lang='en', slow=False)
-        mp3_buffer = BytesIO()
-        tts.write_to_fp(mp3_buffer)
-        mp3_buffer.seek(0)
-        audio_base64 = base64.b64encode(mp3_buffer.read()).decode('utf-8')
+        engine = pyttsx3.init()
+        engine.setProperty('rate', 225) 
+        engine.setProperty('volume', 1.0) 
+        
+        wav_buffer = BytesIO()
+        engine.save_to_file(text, 'temp_output.wav')
+        engine.runAndWait()
+        with open('temp_output.wav', 'rb') as f:
+            wav_data = f.read()
+        wav_buffer.write(wav_data)
+        wav_buffer.seek(0)
+        
+        os.remove('temp_output.wav')
+        
+        audio_base64 = base64.b64encode(wav_buffer.read()).decode('utf-8')
         return audio_base64
     except Exception as e:
         logger.error(f"Error in text-to-speech conversion: {type(e).__name__}: {e}")
-        return "" 
+        return ""
 
 
 @router.post("/process", response_model=VoiceResponse)
