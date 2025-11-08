@@ -11,4 +11,5 @@ gTTS
 pydub
 python-multipart
 redis
-pyttsx3
+# pyttsx3
+edge-tts
