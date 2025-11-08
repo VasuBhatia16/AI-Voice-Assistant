@@ -30,6 +30,8 @@ colorama==0.4.6
     # via
     #   click
     #   tqdm
+comtypes==1.4.13
+    # via pyttsx3
 distro==1.9.0
     # via openai
 fastapi==0.120.3
@@ -119,10 +121,18 @@ pydantic-core==2.41.4
     # via pydantic
 pydub==0.25.1
     # via -r requirements.in
+pypiwin32==223
+    # via pyttsx3
 python-dotenv==1.2.1
     # via -r requirements.in
 python-multipart==0.0.20
     # via -r requirements.in
+pyttsx3==2.99
+    # via -r requirements.in
+pywin32==311
+    # via
+    #   pypiwin32
+    #   pyttsx3
 pyyaml==6.0.3
     # via
     #   langchain-classic

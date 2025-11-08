@@ -11,3 +11,4 @@ gTTS
 pydub
 python-multipart
 redis
+pyttsx3
