@@ -1,14 +1,12 @@
 import base64
 from io import BytesIO
-import os
+import edge_tts
 import speech_recognition as sr
-from gtts import gTTS
 from fastapi import APIRouter, HTTPException
 from pydub import AudioSegment
 import logging
 from app.models.voice import VoiceInput, VoiceResponse
 from app.core.llm_client import LLMClient
-import pyttsx3
 logger = logging.getLogger(__name__)
 
 llm_client = LLMClient()
@@ -61,7 +59,7 @@ def transcribe_audio(audio_buffer: BytesIO) -> str:
     return user_text
 
 
-def text_to_speech(text: str) -> str:
+async def text_to_speech(text: str) -> str:
     """
     Converts text to speech audio using gTTS (Google Text-to-Speech).
     
@@ -82,21 +80,12 @@ def text_to_speech(text: str) -> str:
     #     logger.error(f"Error in text-to-speech conversion: {type(e).__name__}: {e}")
     #     return "" 
     try:
-        engine = pyttsx3.init()
-        engine.setProperty('rate', 225) 
-        engine.setProperty('volume', 1.0) 
-        
-        wav_buffer = BytesIO()
-        engine.save_to_file(text, 'temp_output.wav')
-        engine.runAndWait()
-        with open('temp_output.wav', 'rb') as f:
-            wav_data = f.read()
-        wav_buffer.write(wav_data)
-        wav_buffer.seek(0)
-        
-        os.remove('temp_output.wav')
-        
-        audio_base64 = base64.b64encode(wav_buffer.read()).decode('utf-8')
+        communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
+        audio_data = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        audio_base64 = base64.b64encode(audio_data).decode('utf-8')
         return audio_base64
     except Exception as e:
         logger.error(f"Error in text-to-speech conversion: {type(e).__name__}: {e}")
@@ -193,7 +182,7 @@ async def process_voice(input_data: VoiceInput):
         logger.error(f"Error in LLM processing: {type(e).__name__}: {e}")
         assistant_response = f"I apologize, but I'm having trouble processing your request right now. Please try again later. Error: {type(e).__name__}"
     
-    output_audio_base64 = text_to_speech(assistant_response)
+    output_audio_base64 = await text_to_speech(assistant_response)
     
     if not output_audio_base64:
         logger.warning("TTS failed, returning text-only response")
