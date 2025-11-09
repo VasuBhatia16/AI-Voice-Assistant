@@ -80,7 +80,7 @@ async def text_to_speech(text: str) -> str:
     #     logger.error(f"Error in text-to-speech conversion: {type(e).__name__}: {e}")
     #     return "" 
     try:
-        communicate = edge_tts.Communicate(text, "en-US-AriaNeural")
+        communicate = edge_tts.Communicate(text)
         audio_data = b""
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
